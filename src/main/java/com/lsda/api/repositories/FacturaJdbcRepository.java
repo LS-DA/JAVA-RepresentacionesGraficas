@@ -22,7 +22,7 @@ public class FacturaJdbcRepository {
     private JdbcTemplate jdbcTemplate;
     
     public Factura getFacturaByCufe(String cufe) {
-        String sql = "SELECT id, cufe, appres, base64doc, xml, qrdata " +
+        String sql = "SELECT id, cufe, appres, base64doc, xml, qrdata, nitemisor " +
                     "FROM factura WITH (NOLOCK) " +
                     "WHERE cufe = ?";
         
@@ -37,6 +37,7 @@ public class FacturaJdbcRepository {
                     // Usar directamente sin encoding
                     factura.setxml(rs.getString("xml"));
                     factura.setQrdata(rs.getString("qrdata"));
+                    factura.setNitemisor(rs.getString("nitemisor"));
                     return factura;
                 });
         } catch (EmptyResultDataAccessException e) {

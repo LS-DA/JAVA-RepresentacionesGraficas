@@ -57,6 +57,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.xml.sax.SAXException;
 
+import com.lsda.api.entities.EmpresaCa;
+import com.lsda.api.services.EmpresaCacheService;
+import com.lsda.api.services.XmlExternoService;
+
 @RestController
 @RequestMapping({"/prod/representacionGrafica"})
 public class RestControllerClass {
@@ -87,6 +91,9 @@ public class RestControllerClass {
 
     @Autowired
     private FacturaService facturaService;
+
+    @Autowired
+    private XmlExternoService xmlExternoService;
 
     private Empresa empresa;
 
@@ -185,8 +192,10 @@ public class RestControllerClass {
             long inicio = System.currentTimeMillis();
             // Factura factura = this.facturaRepository.getFactura(Cufe);
             Factura factura = facturaService.getFacturaOptimizada(Cufe);
-            //Factura factura = this.facturaJdbcRepository.getFacturaByCufe(Cufe);
 
+            EmpresaCa empresa = EmpresaCacheService.getEmpresaByNit(factura.getNitemisor());
+
+            //Factura factura = this.facturaJdbcRepository.getFacturaByCufe(Cufe);
             //  FacturaProjection factura = this.facturaRepository.getFactura(Cufe);
             long fin = System.currentTimeMillis();
             long tiempoEjecucion = fin - inicio;
@@ -209,29 +218,86 @@ public class RestControllerClass {
                 if (xmlSelladoUrl != null && !xmlSelladoUrl.isEmpty()) {
                     xmlSellado = fetchContentFromUrl(xmlSelladoUrl);
                     if (xmlSellado == null) {
-                        response.put("error", "No se pudo obtener el contenido de la URL de xml: " + xmlSelladoUrl);
-                        return response;
+
+                        if (empresa != null) {
+                            long inicioServicio = System.currentTimeMillis();
+                            xmlSellado = xmlExternoService.obtenerXmlSelladoValidado(Cufe, empresa.getNit());
+                            long tiempoServicio = System.currentTimeMillis() - inicioServicio;
+
+                            if (xmlSellado != null) {
+                                System.out.println("✅ XML sellado obtenido del servicio externo en " + tiempoServicio + "ms");
+                            } else {
+                                response.put("error", "No se pudo obtener XML sellado ni de URL ni de servicio externo");
+                                return response;
+                            }
+                        } else {
+                            response.put("error", "No se pudo determinar el NIT de la empresa para consultar servicio externo");
+                            return response;
+                        }
+
                     }
                 } else {
-                    response.put("error", "El campo xml es nulo o vacío");
-                    return response;
-                }
 
+                    if (empresa != null) {
+                        long inicioServicio = System.currentTimeMillis();
+                        xmlSellado = xmlExternoService.obtenerXmlSelladoValidado(Cufe, empresa.getNit());
+                        long tiempoServicio = System.currentTimeMillis() - inicioServicio;
+
+                        if (xmlSellado != null) {
+                            System.out.println("✅ XML sellado obtenido del servicio externo en " + tiempoServicio + "ms");
+                        } else {
+                            response.put("error", "No se pudo obtener XML sellado ni de URL ni de servicio externo");
+                            return response;
+                        }
+                    } else {
+                        response.put("error", "No se pudo determinar el NIT de la empresa para consultar servicio externo");
+                        return response;
+                    }
+                }
                 qrdata = factura.getQrdata();
                 if (qrdata == null) {
                     qrdata = "https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=" + Cufe;
                 }
 
-                String Appres = factura.getAppres();
+                // Fetch xmlSellado from URL
+                String Appres = factura.getxml();
                 if (Appres != null && !Appres.isEmpty()) {
                     Appres = fetchContentFromUrl(Appres);
                     if (Appres == null) {
-                        response.put("error", "No se pudo obtener el contenido de la URL de base64doc: " + xmlBaseUrl);
-                        return response;
+
+                        if (empresa != null) {
+                            long inicioServicio = System.currentTimeMillis();
+                            Appres = xmlExternoService.extraerXmlDeJsonAlternativo(Cufe, empresa.getNit());
+                            long tiempoServicio = System.currentTimeMillis() - inicioServicio;
+
+                            if (Appres != null) {
+                                System.out.println("✅ XML sellado obtenido del servicio externo en " + tiempoServicio + "ms");
+                            } else {
+                                response.put("error", "No se pudo obtener XML sellado ni de URL ni de servicio externo");
+                                return response;
+                            }
+                        } else {
+                            response.put("error", "No se pudo determinar el NIT de la empresa para consultar servicio externo");
+                            return response;
+                        }
+
                     }
                 } else {
-                    response.put("error", "El campo APPrespo es nulo o vacío");
-                    return response;
+                    if (empresa != null) {
+                        long inicioServicio = System.currentTimeMillis();
+                        Appres = xmlExternoService.extraerXmlDeJsonAlternativo(Cufe, empresa.getNit());
+                        long tiempoServicio = System.currentTimeMillis() - inicioServicio;
+
+                        if (Appres != null) {
+                            System.out.println("✅ XML sellado obtenido del servicio externo en " + tiempoServicio + "ms");
+                        } else {
+                            response.put("error", "No se pudo obtener XML sellado ni de URL ni de servicio externo");
+                            return response;
+                        }
+                    } else {
+                        response.put("error", "No se pudo determinar el NIT de la empresa para consultar servicio externo");
+                        return response;
+                    }
                 }
 
                 FechaValida = cargarFEchaValida(Appres);

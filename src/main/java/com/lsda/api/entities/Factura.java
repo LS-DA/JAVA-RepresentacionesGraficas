@@ -48,19 +48,23 @@ public class Factura implements Serializable {
 
     @Column(name = "appres")
     private String appres;
+    
+     @Column(name = "nitemisor")
+    private String nitemisor;
 
     // Constructor por defecto
     public Factura() {
     }
 
     // Constructor para consulta nativa
-    public Factura(Long id, String cufe, String appres, String base64doc, String xml, String qrdata) {
+    public Factura(Long id, String cufe, String appres, String base64doc, String xml, String qrdata, String nitemisor) {
         this.id = id;
         this.cufe = cufe;
         this.appres = appres;
         this.base64doc = base64doc;
         this.xml = xml;
         this.qrdata = qrdata;
+        this.nitemisor= nitemisor;
     }
 
     public String getAppres() {
@@ -98,6 +102,17 @@ public class Factura implements Serializable {
             e.printStackTrace();
         }
     }
+
+    public String getNitemisor() {
+        return nitemisor;
+    }
+
+    public void setNitemisor(String nitemisor) {
+        this.nitemisor = nitemisor;
+    }
+    
+    
+    
 
     public static String decode(String value) throws Exception {
         byte[] decodedValue = Base64.getDecoder().decode(value);
